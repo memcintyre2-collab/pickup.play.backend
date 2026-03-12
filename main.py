@@ -46,7 +46,7 @@ def recommend(sport: str):
         messages=[
             {"role": "user", "content": prompt}
         ],
-        model="llama3-8b-8192"
+        model="llama-3.1-8b-instant"
     )
 
     recommendation = chat_completion.choices[0].message.content
