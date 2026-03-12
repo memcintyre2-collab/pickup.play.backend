@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import csv
 import io
 from fastapi.responses import JSONResponse
+import os
+from groq import Groq
 
 app = FastAPI()
 
@@ -16,10 +18,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Connect to Groq AI
+client = Groq(api_key=os.environ["GROQ_API_KEY"])
+
 # Google Sheet CSV link
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ByNKk45KxiR-aC5kIiz4j0dhOvq-2fi-kxml6ZBCX0k/export?format=csv"
 
-# ✅ Return JSON instead of CSV
+# Return games as JSON
 @app.get("/games")
 def get_games():
     response = requests.get(SHEET_URL)
@@ -28,7 +33,22 @@ def get_games():
     games = list(reader)
     return JSONResponse(content=games)
 
-# Recommendation endpoint
+# AI Recommendation endpoint
 @app.get("/recommend")
 def recommend(sport: str):
-    return {"recommendation": f"Try joining a {sport} pickup game near you!"}
+
+    prompt = f"""
+    Suggest a fun pickup {sport} game someone could join in San Francisco.
+    Mention a park or public court if possible. Keep it short and friendly.
+    """
+
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        model="llama3-8b-8192"
+    )
+
+    recommendation = chat_completion.choices[0].message.content
+
+    return {"recommendation": recommendation}
